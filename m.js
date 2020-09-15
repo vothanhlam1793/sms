@@ -129,17 +129,19 @@ function startModem(cb) {
                         console.log(`Sim Memory Result: ${JSON.stringify(result)}`);
 
                         // read the whole SIM card inbox
-                        gsmModem.getSimInbox((result, err) => {
-                            if (err) {
-                                console.log(`Failed to get SimInbox ${err}`);
-                            } else {
-                                console.log(`Sim Inbox Result: ${JSON.stringify(result)}`);
-                            }
-                            if(cb){
-                                cb();
-                            }
-                        });
-
+                        // gsmModem.getSimInbox((result, err) => {
+                        //     if (err) {
+                        //         console.log(`Failed to get SimInbox ${err}`);
+                        //     } else {
+                        //         console.log(`Sim Inbox Result: ${JSON.stringify(result)}`);
+                        //     }
+                        //     if(cb){
+                        //         cb();
+                        //     }
+                        // });
+                        if(cb){
+                            cb();
+                        }
                     }
                 });
 
@@ -186,12 +188,14 @@ var checkError = true;
 var runningSend = false;
 var arraySms = [];
 var tempModem = true;
-var timeout_close;
-var timeout_restart;
+var timeout_close = 0;
+var timeout_restart = 0;
 
 function stopTimeout(){
     clearTimeout(timeout_close);
     clearTimeout(timeout_restart);
+    timeout_close = 0;
+    timeout_restart = 0;
     tempModem = false;
 }
 function closeModem(){
@@ -200,6 +204,7 @@ function closeModem(){
     } else {
         tempModem = true;
     }
+    clearTimeout();
     timeout_close = setTimeout(() => {
         checkError = true;
         gsmModem.close(() => {
@@ -209,6 +214,7 @@ function closeModem(){
 }
 
 function restartModem(){
+    clearTimeout();
     timeout_restart = setTimeout(()=>{
         checkError = true;
         gsmModem.close(() => {
@@ -262,29 +268,26 @@ function sendArray(){
     }
 }
 
-
-function callbackData(cb, data){
-    if(cb){
-        cb(data);
-    }
-}
-
-function elementSendSMS(p_data, cb){
-    send(p_data.phone, p_data.content, cb);
-}
-
 function sendSMS(p_datas, cb){
-    clearTimeout();
     if(checkError == true){
+        clearTimeout();
         tempModem = false;
         startModem(function(){
             sendArray();
         });
         checkError = false;
-    } 
+    }
+    console.log("ARRAY:", arraySms.length);
+    console.log("ERROR:", checkError);
+    console.log("TIMOUT:", timeout_close);
+    console.log("TYPEOF:", typeof timeout_close)
     p_datas.forEach(function(e){
         arraySms.push(e);
     });
+    if((checkError == false) && (typeof timeout_close == "object") && (arraySms.length == p_datas.length)){
+        clearTimeout();
+        sendArray();
+    }
     if(cb){
         cb("RECV: " + p_datas.length);
     }
