@@ -1,7 +1,7 @@
 const serialportgsm = require('serialport-gsm');
-const SERIAL = '/dev/tty.usbserial-141310';
+const SERIAL = '/dev/ttyUSB0';
 var gsmModem = serialportgsm.Modem()
-let options = {
+var options = {
     baudRate: 9600,
     dataBits: 8,
     parity: 'none',
@@ -20,7 +20,7 @@ let options = {
 }
 
 
-let phone = {
+var phone = {
     name: "My-Name",
     number: "+84932032732",
     numberSelf: "+49XXXXXX",
@@ -135,15 +135,6 @@ function startModem(cb) {
                             } else {
                                 console.log(`Sim Inbox Result: ${JSON.stringify(result)}`);
                             }
-
-                            // Finally send an SMS
-                            // const message = `Ngon lành - hệ thống này có thể gởi được tin nhắn có số lượng kí tự lớn hay không?. Nhưng có vẻ nó đang tạo ra rất nhiều giới hạn mà chúng ta có thể vượt qua. Nếu nó ổn định, ta hoàn toàn có thể chăm sóc những thứ chúng ta thích nhất. Từ mã UTF8 nó tự động chuyển sang UTF16-BE. Tuyệt vời!.`;
-                            // const message = `Xin chào hệ thống - tôi nhắn được tiếng Việt rồi nè :D`
-                            // gsmModem.sendSMS(phone.number, message, false, (result) => {
-                            //     console.log(`Callback Send: Message ID: ${result.data.messageId},` +
-                            //         `${result.data.response} To: ${result.data.recipient} ${JSON.stringify(result)}`);
-                            // });
-                            // readySendMessage(cb);
                             if(cb){
                                 cb();
                             }
@@ -195,23 +186,30 @@ var checkError = true;
 var runningSend = false;
 var arraySms = [];
 var tempModem = true;
+var timeout_close;
+var timeout_restart;
 
+function stopTimeout(){
+    clearTimeout(timeout_close);
+    clearTimeout(timeout_restart);
+    tempModem = false;
+}
 function closeModem(){
     if(tempModem == true) {
         return;
     } else {
         tempModem = true;
     }
-    setTimeout(() => {
+    timeout_close = setTimeout(() => {
         checkError = true;
         gsmModem.close(() => {
 
         });
-    }, 20000);
+    }, 90000);
 }
 
 function restartModem(){
-    setTimeout(()=>{
+    timeout_restart = setTimeout(()=>{
         checkError = true;
         gsmModem.close(() => {
             sendSMS([]);
@@ -239,10 +237,12 @@ function sendArray(){
     } else {
         send(p_data.phone, p_data.content, function(res){
             if(res == "Message Successfully Sent") {
+                stopTimeout();
                 console.log("THANH CONG");
                 sendArray();
             } else if (res == "Successfully Sent to Message Queue"){
                 console.log("Doi mot xiu");
+                stopTimeout();
                 if(waiting == true){
 
                 } else {
@@ -250,7 +250,7 @@ function sendArray(){
                     setTimeout(()=>{
                         sendArray();
                         waiting = false;
-                    }, 5000);
+                    }, 10000);
                 }
             } else {
                 console.log("That bai");
@@ -274,6 +274,7 @@ function elementSendSMS(p_data, cb){
 }
 
 function sendSMS(p_datas, cb){
+    clearTimeout();
     if(checkError == true){
         tempModem = false;
         startModem(function(){
