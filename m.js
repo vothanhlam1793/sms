@@ -1,5 +1,5 @@
 const serialportgsm = require('serialport-gsm');
-const SERIAL = '/dev/ttyUSB0';
+const SERIAL = '/dev/tty.usbserial-142310';
 var gsmModem = serialportgsm.Modem()
 var options = {
     baudRate: 9600,
@@ -163,6 +163,7 @@ function startModem(cb) {
 
         gsmModem.on('close', data => {
             //whole message data
+            SYSTEM = "STOP"
             console.log(`Event Close: ` + JSON.stringify(data));
         });
 
@@ -280,4 +281,69 @@ function sendSMS(p_datas, cb){
     }
 }
 
+var SYSTEM = "STOP";
+function start(cb){
+    if((SYSTEM == "START") || (SYSTEM == "STARTING")){
+        if(cb){
+            cb(SYSTEM);
+        }
+        return SYSTEM;
+    } else {
+        SYSTEM = "STARTING";
+        startModem(function(){
+            if(cb){
+                SYSTEM = "START";
+                cb("SUCCESS");
+            }
+        })
+        return "OK";
+    }
+}
+
+function stop(cb){
+    if((SYSTEM == "STOP") || (SYSTEM == "STOPPING")){
+        if(cb){
+            cb(SYSTEM);
+        }
+        return SYSTEM;
+    } else if (SYSTEM == "START") {
+        SYSTEM = "STOPPING";
+        gsmModem.close(() => {
+            if(cb){
+                cb("SUCCEES");
+            }
+        });
+        return "OK";
+    } else {
+        if(cb){
+            cb("ERROR: Cannot stop when starting");
+        }
+        return "ERROR";
+    }
+}
+
+var ACTION = "IDLE";
+function sms(obj, cb){
+    if((SYSTEM == "START") && (ACTION == "IDLE")){
+        ACTION = "SENDING";
+        gsmModem.sendSMS(obj.number, obj.message, false, (result) => {
+            if(result.data.response == "Message Successfully Sent"){
+                ACTION = "IDLE";
+                if(cb){
+                    cb("SUCCESS");
+                }
+            } else {
+
+            }
+        });
+        return "OK";
+    } else if ((SYSTEM == "STOP") || (SYSTEM == "STOPPING")){
+        return "ERROR";
+    } else {
+        return "WAITING";
+    }
+}
 module.exports.sendSMS = sendSMS;
+module.exports.start = start;
+module.exports.stop = stop;
+module.exports.send = sms;
