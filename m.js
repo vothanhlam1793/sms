@@ -127,18 +127,6 @@ function startModem(cb) {
                         console.log(`Failed to get SimMemory ${err}`);
                     } else {
                         console.log(`Sim Memory Result: ${JSON.stringify(result)}`);
-
-                        // read the whole SIM card inbox
-                        // gsmModem.getSimInbox((result, err) => {
-                        //     if (err) {
-                        //         console.log(`Failed to get SimInbox ${err}`);
-                        //     } else {
-                        //         console.log(`Sim Inbox Result: ${JSON.stringify(result)}`);
-                        //     }
-                        //     if(cb){
-                        //         cb();
-                        //     }
-                        // });
                         if(cb){
                             cb();
                         }
@@ -185,7 +173,6 @@ function startModem(cb) {
 
 
 var checkError = true;
-var runningSend = false;
 var arraySms = [];
 var tempModem = true;
 var timeout_close = 0;
