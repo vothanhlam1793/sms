@@ -1,5 +1,5 @@
 const serialportgsm = require('serialport-gsm');
-const SERIAL = '/dev/tty.usbserial-142310';
+const SERIAL = '/dev/tty.SLAB_USBtoUART';
 var gsmModem = serialportgsm.Modem()
 var options = {
     baudRate: 9600,
@@ -164,6 +164,7 @@ function startModem(cb) {
         gsmModem.on('close', data => {
             //whole message data
             SYSTEM = "STOP"
+            ACTION = "IDLE";
             console.log(`Event Close: ` + JSON.stringify(data));
         });
 
@@ -293,6 +294,7 @@ function start(cb){
         startModem(function(){
             if(cb){
                 SYSTEM = "START";
+                ACTION = "IDLE";
                 cb("SUCCESS");
             }
         })
@@ -343,7 +345,15 @@ function sms(obj, cb){
         return "WAITING";
     }
 }
+
+function status(){
+    return {
+        system: SYSTEM,
+        action: ACTION
+    };
+}
 module.exports.sendSMS = sendSMS;
 module.exports.start = start;
 module.exports.stop = stop;
 module.exports.send = sms;
+module.exports.status = status;

@@ -24,6 +24,11 @@ app.post("/sms", function(req, res){
     }));
 });
 
+
+app.get("/status", function(req, res){
+    res.send(sms.status());
+})
+
 // app.post('/sms', (req, res) => {
 //     console.log('Got body:', req.body);
 //     sms.sendSMS(req.body.data, function(e){
