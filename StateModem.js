@@ -23,17 +23,17 @@ let options = {
 }
 
 class StartState{   
-    handle(cmd, data, _modem, cb){
+    handle(cmd, data, _modem, cb, next_state){
         switch(cmd){
             case "open": {
                 _modem.modem.open(pathSerial, options);
-                // _modem.state = STATE_MODEM.IDLE;
+                // Waiting for Event -> IDLE will change by Callback,Emit
             } break;
             case "idle": {
-                _modem.state = STATE_MODEM.IDLE;
+                next_state = STATE_MODEM.IDLE;
             } break;
             case "close": {
-                _modem.state = STATE_MODEM.START;
+                next_state = STATE_MODEM.START;
             }
             default: {
                 console.log("START_STATE: not support");
@@ -81,18 +81,18 @@ function sentMessageModel(data){
 }
 i =0;
 class IdleState {
-    handle(cmd, data, _modem, cb){
+    handle(cmd, data, _modem, cb, next_state){
         switch(cmd){
             case "sendSMS": {
                 _modem.modem.sendSMS(data.phone, data.message, true, function(a){
                     console.log("Callback")
                     console.log(i++, a);
                 });
-                _modem.state = STATE_MODEM.PROCESS;
+                next_state = STATE_MODEM.PROCESS;
             } break;
             case "close": {
                 _modem.modem.close();
-                _modem.state = STATE_MODEM.START;
+                next_state = STATE_MODEM.START;
             } break;
             default: {
                 console.log("IDLE_STATE: not support");
@@ -102,13 +102,13 @@ class IdleState {
 }
 
 class ProcessState {
-    handle(cmd, data, _modem, cb){
+    handle(cmd, data, _modem, cb, next_state){
         switch(cmd){
             case "sent": {
-                _modem.state = STATE_MODEM.IDLE;
+                next_state = STATE_MODEM.IDLE;
             } break;
             case "error": {
-                _modem.state = STATE_MODEM.ERROR;
+                next_state = STATE_MODEM.ERROR;
             } break;
             default: {
                 console.log("PROCESS_STATE: not support");
@@ -117,10 +117,10 @@ class ProcessState {
     }
 }
 class ErrorState {
-    handle(cmd, data, _modem, cb){
+    handle(cmd, data, _modem, cb, next_state){
         switch(cmd){
             case "fixed": {
-                _modem.state = STATE_MODEM.IDLE;
+                next_state = STATE_MODEM.IDLE;
             } break;
             default: {
                 console.log("ERROR_STATE: not support");
@@ -128,6 +128,9 @@ class ErrorState {
         }
     }
 }
+
+
+
 class StateFactory {
     getState(state){
         switch(state){
@@ -151,12 +154,23 @@ class StateFactory {
     }
 }
 
+class StateMachine {
+    constructor(){
+        this.state = STATE_MODEM.START;
+        this.stateFactory = new StateFactory();
+    }
+    handle(cmd, data, modem, cb){
+        state = this.stateFactory.getState();
+        state.handle(cmd, data, modem, cb, this.state);
+    }
+}
+
 class Modem {
     constructor(name){
         let that = this;
+        this.path = ""
         this.name = name;
-        this.state = STATE_MODEM.START;
-        this.stateFacetory = new StateFactory();
+        this.stateMachine = new StateMachine();
 
         //composition
         this.modem = serialportgsm.Modem();
@@ -193,8 +207,11 @@ class Modem {
         return this.stateFacetory.getState(this.state);
     }
     start(){
-        var state = this.stateObject();
-        state.handle('open',{}, this);
+        this.stateMachine.handle('open', {}, this, function(){
+
+        })
+        // var state = this.stateObject();
+        // state.handle('open',{}, this);
     }
     sendSMS(phone, content){
         var state = this.stateObject();
@@ -216,8 +233,9 @@ class Modem {
         state.handle('error',{}, this);
     }
     idle(){
-        var state = this.stateObject();
-        state.handle('idle',{}, this);
+        this.stateMachine.handle('idle', {}, this);
+        // var state = this.stateObject();
+        // state.handle('idle',{}, this);
     }
     fixed(){
         var state = this.stateObject();
@@ -232,4 +250,28 @@ STATE_MODEM = {
     ERROR: 3
 }
 
+
+class SMSGate {
+    constructor(){
+        this.path = "";
+        this.modem = {};
+        this.name = "";
+        this.stateMachine = new StateMachine();
+    }
+    func(type){
+
+    }
+    set_feature(type, option){
+
+    }
+    get_info(type){
+
+    }
+    init(){
+
+    }
+    control(type){
+
+    }
+}
 module.exports.Modem = Modem;
