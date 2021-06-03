@@ -11,7 +11,7 @@ var MessageSchema = new Schema({
 });
 var MessageModel = mongoose.model('MessageModel', MessageSchema);
 
-var mongoDB = 'mongodb://root:asrkpvg7@svr8.creta.vn';
+var mongoDB = 'mongodb://svr8.creta.vn:27017/mydb';
 mongoose.connect(mongoDB, {useNewUrlParser: true, useUnifiedTopology: true}).then(function(){
     
 }).catch(function(){
